@@ -1,0 +1,70 @@
+# Configuración de Variables de Entorno para Servicios de IA
+# Copiar estas variables al archivo .env del proyecto
+
+# OpenAI Configuration
+OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_MODEL=gpt-4
+OPENAI_TIMEOUT=30
+OPENAI_MAX_TOKENS=1000
+OPENAI_TEMPERATURE=0.3
+OPENAI_ACTIVE=true
+OPENAI_RATE_LIMIT=1000
+
+# Anthropic Configuration
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
+ANTHROPIC_BASE_URL=https://api.anthropic.com
+ANTHROPIC_MODEL=claude-3-opus-20240229
+ANTHROPIC_TIMEOUT=30
+ANTHROPIC_MAX_TOKENS=1000
+ANTHROPIC_ACTIVE=true
+ANTHROPIC_RATE_LIMIT=500
+
+# Google Gemini Configuration
+GOOGLE_GEMINI_API_KEY=your_google_gemini_api_key_here
+GOOGLE_GEMINI_BASE_URL=https://generativelanguage.googleapis.com/v1beta
+GOOGLE_GEMINI_MODEL=gemini-pro
+GOOGLE_GEMINI_TIMEOUT=30
+GOOGLE_GEMINI_ACTIVE=true
+GOOGLE_GEMINI_RATE_LIMIT=1000
+
+# ElevenLabs Configuration (Text-to-Speech)
+ELEVENLABS_API_KEY=your_elevenlabs_api_key_here
+ELEVENLABS_BASE_URL=https://api.elevenlabs.io/v1
+ELEVENLABS_MODEL=eleven_multilingual_v1
+ELEVENLABS_VOICE_ID=21m00Tcm4TlvDq8ikWAM
+ELEVENLABS_ACTIVE=true
+ELEVENLABS_RATE_LIMIT=100
+
+# LexisNexis Configuration (Legal AI)
+LEXISNEXIS_API_KEY=your_lexisnexis_api_key_here
+LEXISNEXIS_BASE_URL=https://api.lexisnexis.com/v1
+LEXISNEXIS_ACTIVE=true
+LEXISNEXIS_RATE_LIMIT=100
+
+# IA Optimization Settings
+IA_AUTO_UPDATE_MODELS=true
+IA_CACHE_DURATION=7200
+IA_FALLBACK_ENABLED=true
+IA_CIRCUIT_BREAKER_ENABLED=true
+IA_RATE_LIMITING_ENABLED=true
+IA_MONITORING_ENABLED=true
+
+# Legal AI Providers
+CONSTITUTIONAL_AI_ACTIVE=true
+TERRITORIAL_AI_ACTIVE=true
+VEEDURIA_AI_ACTIVE=true
+
+# Additional AI Services
+AZURE_OPENAI_API_KEY=
+AZURE_OPENAI_ENDPOINT=
+AZURE_OPENAI_MODEL=gpt-4
+AZURE_OPENAI_ACTIVE=false
+
+COHERE_API_KEY=
+COHERE_MODEL=command
+COHERE_ACTIVE=false
+
+HUGGINGFACE_API_KEY=
+HUGGINGFACE_MODEL=meta-llama/Llama-2-7b-chat-hf
+HUGGINGFACE_ACTIVE=false
