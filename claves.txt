@@ -1,0 +1,4 @@
+Admin General: admin@csdt.gov.co / admin123456
+Admin: admin@csdt.gov.co / admin123
+Operador: operador@csdt.gov.co / operador123
+Cliente: cliente@csdt.gov.co / cliente123

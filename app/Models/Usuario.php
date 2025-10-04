@@ -35,7 +35,23 @@ class Usuario extends Authenticatable
         'cor_ver',
         'cor_ver_en',
         'ult_acc',
-        'not'
+        'not',
+        // Campos de profesión y nivel
+        'profesion_id',
+        'nivel_id',
+        'años_experiencia',
+        'numero_matricula',
+        'entidad_matricula',
+        'fecha_matricula',
+        'especializaciones',
+        'certificaciones',
+        'perfil_profesional',
+        'perfil_verificado',
+        'perfil_verificado_en',
+        'verificado_por',
+        'estado_verificacion',
+        'motivo_rechazo',
+        'documentos_adjuntos'
     ];
 
     protected $hidden = [
@@ -48,6 +64,14 @@ class Usuario extends Authenticatable
         'cor_ver_en' => 'datetime',
         'ult_acc' => 'datetime',
         'fec_nac' => 'date',
+        // Campos de profesión y nivel
+        'especializaciones' => 'array',
+        'certificaciones' => 'array',
+        'documentos_adjuntos' => 'array',
+        'perfil_verificado' => 'boolean',
+        'perfil_verificado_en' => 'datetime',
+        'fecha_matricula' => 'date',
+        'años_experiencia' => 'integer'
     ];
 
     // Relaciones
@@ -101,6 +125,22 @@ class Usuario extends Authenticatable
     public function logs()
     {
         return $this->hasMany(Log::class, 'usu_id');
+    }
+
+    // Relaciones de profesión y nivel
+    public function profesion()
+    {
+        return $this->belongsTo(Profesion::class, 'profesion_id');
+    }
+
+    public function nivel()
+    {
+        return $this->belongsTo(NivelUsuario::class, 'nivel_id');
+    }
+
+    public function verificadoPor()
+    {
+        return $this->belongsTo(Usuario::class, 'verificado_por');
     }
 
     // Scopes
@@ -326,5 +366,72 @@ class Usuario extends Authenticatable
     public function tieneRol($rol)
     {
         return $this->rol === $rol || $this->esAdministradorGeneral();
+    }
+
+    // Métodos de profesión y nivel
+    public function tieneProfesion()
+    {
+        return !is_null($this->profesion_id);
+    }
+
+    public function tieneNivel()
+    {
+        return !is_null($this->nivel_id);
+    }
+
+    public function perfilCompleto()
+    {
+        return $this->tieneProfesion() && $this->tieneNivel() && $this->perfil_verificado;
+    }
+
+    public function puedeAsignarNivel($nivel)
+    {
+        if (is_object($nivel)) {
+            return $nivel->puedeSerAsignadoA($this);
+        }
+        
+        $nivelModel = NivelUsuario::find($nivel);
+        return $nivelModel ? $nivelModel->puedeSerAsignadoA($this) : false;
+    }
+
+    public function obtenerEspecializaciones()
+    {
+        return $this->especializaciones ?? [];
+    }
+
+    public function obtenerCertificaciones()
+    {
+        return $this->certificaciones ?? [];
+    }
+
+    public function obtenerDocumentosAdjuntos()
+    {
+        return $this->documentos_adjuntos ?? [];
+    }
+
+    public function verificarPerfil($verificadoPor = null)
+    {
+        $this->update([
+            'perfil_verificado' => true,
+            'perfil_verificado_en' => now(),
+            'verificado_por' => $verificadoPor ?? auth()->id(),
+            'estado_verificacion' => 'verificado'
+        ]);
+    }
+
+    public function rechazarPerfil($motivo, $verificadoPor = null)
+    {
+        $this->update([
+            'perfil_verificado' => false,
+            'perfil_verificado_en' => null,
+            'verificado_por' => $verificadoPor ?? auth()->id(),
+            'estado_verificacion' => 'rechazado',
+            'motivo_rechazo' => $motivo
+        ]);
+    }
+
+    public function solicitarVerificacion()
+    {
+        $this->update(['estado_verificacion' => 'pendiente']);
     }
 }

@@ -24,6 +24,10 @@ require_once __DIR__ . '/api-administrador-general.php';
 require_once __DIR__ . '/api-completa.php';
 require_once __DIR__ . '/api-ia-derechos-especializados.php';
 require_once __DIR__ . '/api-planes-minero-ambiental.php';
+require_once __DIR__ . '/api-ia-especializada.php';
+require_once __DIR__ . '/api-ia-especializadas-avanzadas.php';
+require_once __DIR__ . '/api-ias-especializadas-futuras.php';
+require_once __DIR__ . '/api-ias-etica.php';
 
 // Rutas públicas (sin autenticación)
 Route::prefix('publico')->group(function () {
