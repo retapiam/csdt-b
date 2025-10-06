@@ -13,11 +13,14 @@ return new class extends Migration
     {
         Schema::create('pagina_permisos', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('pagina_id')->constrained('paginas')->onDelete('cascade');
-            $table->foreignId('permiso_id')->constrained('perm')->onDelete('cascade');
+            $table->unsignedBigInteger('pagina_id');
+            $table->unsignedBigInteger('permiso_id');
             $table->timestamps();
 
             $table->unique(['pagina_id', 'permiso_id']);
+            
+            $table->foreign('pagina_id')->references('id')->on('paginas')->onDelete('cascade');
+            $table->foreign('permiso_id')->references('id')->on('per')->onDelete('cascade');
         });
     }
 

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('analisis_ia_derechos_especializados', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('usuario_id')->constrained('usuarios')->onDelete('cascade');
+            $table->foreignId('usuario_id')->constrained('usu')->onDelete('cascade');
             $table->string('area_derecho', 100)->index();
             $table->string('tipo_analisis', 100)->index();
             $table->json('datos_entrada');
@@ -28,10 +28,10 @@ return new class extends Migration
             $table->softDeletes();
             
             // Índices adicionales
-            $table->index(['area_derecho', 'tipo_analisis']);
-            $table->index(['usuario_id', 'area_derecho']);
-            $table->index(['estado', 'created_at']);
-            $table->index('created_at');
+            $table->index(['area_derecho', 'tipo_analisis'], 'idx_area_tipo');
+            $table->index(['usuario_id', 'area_derecho'], 'idx_usuario_area');
+            $table->index(['estado', 'created_at'], 'idx_estado_fecha');
+            $table->index('created_at', 'idx_created_at');
         });
     }
 

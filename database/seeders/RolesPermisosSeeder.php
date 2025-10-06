@@ -15,24 +15,28 @@ class RolesPermisosSeeder extends Seeder
         // Crear roles del sistema
         $roles = [
             [
+                'cod' => 'cli',
                 'nom' => 'Cliente',
                 'des' => 'Usuario básico con acceso limitado a páginas públicas y compartidas',
                 'est' => 'act',
                 'niv' => 1
             ],
             [
+                'cod' => 'ope',
                 'nom' => 'Operador',
                 'des' => 'Usuario con permisos para gestionar procesos y atención al cliente',
                 'est' => 'act',
                 'niv' => 2
             ],
             [
+                'cod' => 'adm',
                 'nom' => 'Administrador',
                 'des' => 'Usuario con permisos administrativos para gestionar el sistema',
                 'est' => 'act',
                 'niv' => 3
             ],
             [
+                'cod' => 'adm_gen',
                 'nom' => 'Administrador General',
                 'des' => 'Usuario con control total del sistema y gestión de usuarios',
                 'est' => 'act',
@@ -42,7 +46,7 @@ class RolesPermisosSeeder extends Seeder
 
         foreach ($roles as $rolData) {
             Rol::firstOrCreate(
-                ['nom' => $rolData['nom']],
+                ['cod' => $rolData['cod']],
                 $rolData
             );
         }
