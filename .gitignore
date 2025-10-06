@@ -1,24 +1,75 @@
+# Logs
 *.log
-.DS_Store
+logs/
+storage/logs/*.log
+
+# Environment files
 .env
+.env.*
+!.env.example
 .env.backup
 .env.production
+.env.local
+
+# IDE and Editor files
+.DS_Store
+.idea/
+.vscode/
 .phpactor.json
 .phpunit.result.cache
 /.fleet
-/.idea
 /.nova
 /.phpunit.cache
-/.vscode
 /.zed
+
+# Authentication files
 /auth.json
+claves.txt
+passwords.txt
+credentials.txt
+
+# Node modules and build files
 /node_modules
 /public/build
 /public/hot
 /public/storage
+
+# Laravel specific
 /storage/*.key
 /storage/pail
 /vendor
+
+# Cache and temporary files
+*.tmp
+*.cache
+*.bak
+*.swp
+*~
+
+# Configuration files with sensitive data
+*_CONFIG.txt
+*_CONFIG.env
+*_KEYS.txt
+*_SECRETS.txt
+IA_ENV_CONFIG.txt
+api_keys.txt
+secrets.txt
+
+# Database files (except migrations)
+database.sqlite
+*.sqlite
+*.db
+
+# Homestead
 Homestead.json
 Homestead.yaml
+
+# Windows
 Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
