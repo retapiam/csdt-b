@@ -1,0 +1,133 @@
+# ==============================================
+# CONFIGURACIÓN OPTIMIZADA - CSDT BACKEND
+# ==============================================
+# Copiar este contenido a tu archivo .env
+
+APP_NAME=CSDT
+APP_ENV=production
+APP_KEY=
+APP_DEBUG=false
+APP_TIMEZONE=America/Bogota
+APP_URL=http://localhost:8000
+APP_LOCALE=es
+APP_FALLBACK_LOCALE=es
+
+# ==============================================
+# CONFIGURACIÓN DE BASE DE DATOS OPTIMIZADA
+# ==============================================
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=csdt_database
+DB_USERNAME=root
+DB_PASSWORD=
+
+# Optimizaciones de conexión (NUEVO)
+DB_PERSISTENT=false
+DB_POOL_MIN=2
+DB_POOL_MAX=10
+
+# Charset optimizado para multi-idioma
+DB_CHARSET=utf8mb4
+DB_COLLATION=utf8mb4_unicode_ci
+
+# ==============================================
+# CONFIGURACIÓN DE CACHÉ (REDIS RECOMENDADO)
+# ==============================================
+
+# IMPORTANTE: Redis es 10-100x más rápido que database
+CACHE_STORE=redis
+CACHE_PREFIX=csdt-cache-
+CACHE_TTL=3600
+
+# ==============================================
+# CONFIGURACIÓN DE REDIS (ALTAMENTE RECOMENDADO)
+# ==============================================
+
+REDIS_CLIENT=phpredis
+REDIS_HOST=127.0.0.1
+REDIS_PASSWORD=null
+REDIS_PORT=6379
+REDIS_DB=0
+REDIS_CACHE_DB=1
+
+# ==============================================
+# CONFIGURACIÓN DE SESIÓN
+# ==============================================
+
+SESSION_DRIVER=redis
+SESSION_LIFETIME=120
+
+# ==============================================
+# CONFIGURACIÓN DE COLAS (JOBS)
+# ==============================================
+
+QUEUE_CONNECTION=redis
+
+# ==============================================
+# PASOS DE INSTALACIÓN
+# ==============================================
+
+1. INSTALAR REDIS (Altamente recomendado):
+   Windows: Descargar desde https://github.com/microsoftarchive/redis/releases
+   Linux: sudo apt-get install redis-server
+   macOS: brew install redis
+
+2. INICIAR REDIS:
+   Windows: redis-server.exe
+   Linux: sudo systemctl start redis
+   macOS: brew services start redis
+
+3. EJECUTAR MIGRACIONES:
+   php artisan migrate
+
+4. GENERAR APP_KEY:
+   php artisan key:generate
+
+5. CACHEAR CONFIGURACIONES (mejora el rendimiento):
+   php artisan config:cache
+   php artisan route:cache
+   php artisan view:cache
+
+6. CREAR TABLA DE CACHÉ (si usas database en lugar de redis):
+   php artisan cache:table
+   php artisan migrate
+
+7. INICIAR QUEUE WORKER (opcional, para mejor rendimiento):
+   php artisan queue:work --tries=3
+
+8. CREAR USUARIOS DE PRUEBA (opcional):
+   php artisan db:seed --class=UsersSeeder
+
+# ==============================================
+# CREDENCIALES DE USUARIOS DE PRUEBA
+# ==============================================
+
+SUPER ADMIN:
+  Email: superadmin@csdt.com
+  Password: super123
+  Rol: SuperAdmin
+  Permisos: Control absoluto, auditoría
+
+ADMINISTRADOR:
+  Email: admin@csdt.com
+  Password: admin123
+  Rol: Administrador
+  Permisos: Control total, gestión usuarios
+
+OPERADOR:
+  Email: operador@csdt.com
+  Password: operador123
+  Rol: Operador
+  Permisos: Gestionar tareas, asignar proyectos
+
+CLIENTE:
+  Email: cliente@csdt.com
+  Password: cliente123
+  Rol: Cliente
+  Permisos: Ver proyectos, crear solicitudes
+
+⚠️ IMPORTANTE: Estas credenciales son para DESARROLLO Y PRUEBAS.
+   Cambiar todas las contraseñas antes de poner en producción.
+
