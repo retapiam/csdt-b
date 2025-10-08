@@ -2,7 +2,7 @@ name: Deploy Backend to Digital Ocean
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ master ]
   workflow_dispatch:
 
 jobs:
@@ -26,8 +26,8 @@ jobs:
           
           # Actualizar código
           git fetch origin
-          git reset --hard origin/main
-          git pull origin main
+          git reset --hard origin/master
+          git pull origin master
           
           # Instalar dependencias
           export COMPOSER_ALLOW_SUPERUSER=1
