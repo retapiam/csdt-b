@@ -1,0 +1,62 @@
+name: Deploy Backend to Digital Ocean
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 🚀 Desplegando Backend en Digital Ocean
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.DO_HOST }}
+        username: ${{ secrets.DO_USERNAME }}
+        key: ${{ secrets.DO_SSH_KEY }}
+        script: |
+          echo "📥 Actualizando Backend..."
+          
+          cd /var/www/csdt-b
+          
+          # Modo de mantenimiento
+          php artisan down || true
+          
+          # Actualizar código
+          git fetch origin
+          git reset --hard origin/main
+          git pull origin main
+          
+          # Instalar dependencias
+          export COMPOSER_ALLOW_SUPERUSER=1
+          composer install --optimize-autoloader --no-dev --no-interaction
+          
+          # Limpiar y cachear
+          php artisan config:clear
+          php artisan cache:clear
+          php artisan route:clear
+          php artisan view:clear
+          
+          # Migraciones
+          php artisan migrate --force
+          
+          # Optimizar
+          php artisan config:cache
+          php artisan route:cache
+          php artisan view:cache
+          
+          # Permisos
+          chown -R www-data:www-data storage bootstrap/cache
+          chmod -R 775 storage bootstrap/cache
+          
+          # Reiniciar servicios
+          systemctl restart php8.2-fpm
+          systemctl reload nginx
+          
+          # Salir de mantenimiento
+          php artisan up
+          
+          echo "✅ Backend actualizado correctamente"
+
