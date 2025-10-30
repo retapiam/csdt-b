@@ -63,10 +63,20 @@ class ActividadController extends Controller
     }
 
     /**
-     * Crear nueva actividad
+     * Crear nueva actividad (Con permisos por rol)
      */
     public function store(Request $request)
     {
+        $usuario = $request->user();
+        
+        // Validar que el usuario tenga permisos para crear actividades
+        if (!in_array($usuario->rol, ['superadmin', 'administrador', 'operador', 'cliente'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes permisos para crear actividades'
+            ], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'proyecto_id' => 'required|exists:proyectos,id',
             'nombre' => 'required|string|max:255',
@@ -78,6 +88,9 @@ class ActividadController extends Controller
             'horas_estimadas' => 'nullable|numeric',
             'costo_estimado' => 'nullable|numeric',
             'color' => 'nullable|string|max:20',
+            'dependencias' => 'nullable|array', // NUEVO: Dependencias de actividades
+            'dependencias.*.actividad_id' => 'exists:actividades,id',
+            'dependencias.*.tipo' => 'in:fin_inicio,inicio_inicio,fin_fin,inicio_fin',
         ]);
 
         if ($validator->fails()) {
@@ -89,6 +102,8 @@ class ActividadController extends Controller
         }
 
         try {
+            \DB::beginTransaction();
+
             // Generar código único
             $proyecto = Proyecto::find($request->proyecto_id);
             $codigo = 'ACT-' . strtoupper(Str::random(8));
@@ -98,6 +113,12 @@ class ActividadController extends Controller
                 ->orderBy('orden', 'desc')
                 ->first();
             $orden = $ultimaActividad ? $ultimaActividad->orden + 1 : 1;
+
+            // Determinar estado inicial según rol
+            $estadoInicial = 'pendiente';
+            if ($usuario->rol === 'cliente') {
+                $estadoInicial = 'revision'; // Clientes crean actividades en revisión
+            }
 
             $actividad = Actividad::create([
                 'proyecto_id' => $request->proyecto_id,
@@ -109,8 +130,9 @@ class ActividadController extends Controller
                 'tipo_actividad' => $request->tipo_actividad,
                 'categoria' => $request->categoria,
                 'prioridad' => $request->prioridad,
-                'creada_por' => $request->user()->id,
-                'responsable_id' => $request->responsable_id,
+                'estado' => $estadoInicial,
+                'creada_por' => $usuario->id,
+                'responsable_id' => $request->responsable_id ?? $usuario->id,
                 'fecha_inicio' => $request->fecha_inicio ?? now(),
                 'fecha_fin_planeada' => $request->fecha_fin_planeada,
                 'horas_estimadas' => $request->horas_estimadas ?? 0,
@@ -120,20 +142,83 @@ class ActividadController extends Controller
                 'orden' => $orden,
                 'color' => $request->color ?? '#3B82F6',
                 'configuracion' => $request->configuracion ?? [],
-                'metadata' => $request->metadata ?? [],
+                'metadata' => array_merge($request->metadata ?? [], [
+                    'creado_por_rol' => $usuario->rol,
+                    'requiere_aprobacion' => $usuario->rol === 'cliente',
+                ]),
             ]);
+
+            // Registrar dependencias si existen
+            if ($request->has('dependencias')) {
+                foreach ($request->dependencias as $dependencia) {
+                    \DB::table('dependencias_actividades')->insert([
+                        'actividad_origen_id' => $dependencia['actividad_id'],
+                        'actividad_destino_id' => $actividad->id,
+                        'tipo_dependencia' => $dependencia['tipo'] ?? 'fin_inicio',
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+            }
+
+            // Si es un cliente quien crea, notificar a administradores
+            if ($usuario->rol === 'cliente') {
+                $this->notificarNuevaActividadCliente($actividad, $usuario);
+            }
+
+            \DB::commit();
+
+            $mensaje = $usuario->rol === 'cliente' 
+                ? 'Actividad creada exitosamente. Un administrador la revisará pronto.'
+                : 'Actividad creada exitosamente';
 
             return response()->json([
                 'success' => true,
-                'message' => 'Actividad creada exitosamente',
-                'data' => $actividad->load(['proyecto', 'creador', 'responsable'])
+                'message' => $mensaje,
+                'data' => $actividad->load(['proyecto', 'creador', 'responsable']),
+                'requiere_aprobacion' => $usuario->rol === 'cliente',
             ], 201);
         } catch (\Exception $e) {
+            \DB::rollBack();
             return response()->json([
                 'success' => false,
                 'message' => 'Error al crear actividad',
                 'error' => $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Notificar a administradores cuando un cliente crea una actividad
+     */
+    private function notificarNuevaActividadCliente($actividad, $cliente)
+    {
+        try {
+            // Obtener todos los administradores del proyecto
+            $administradores = User::whereIn('rol', ['superadmin', 'administrador'])->get();
+
+            foreach ($administradores as $admin) {
+                \DB::table('notificaciones')->insert([
+                    'user_id' => $admin->id,
+                    'tipo' => 'nueva_actividad_cliente',
+                    'titulo' => 'Nueva actividad creada por cliente',
+                    'mensaje' => "El cliente {$cliente->name} ha creado una nueva actividad: {$actividad->nombre}",
+                    'datos' => json_encode([
+                        'actividad_id' => $actividad->id,
+                        'actividad_codigo' => $actividad->codigo,
+                        'proyecto_id' => $actividad->proyecto_id,
+                        'cliente_id' => $cliente->id,
+                        'cliente_nombre' => $cliente->name,
+                        'prioridad' => $actividad->prioridad,
+                    ]),
+                    'leido' => false,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        } catch (\Exception $e) {
+            // Log error pero no fallar la creación de actividad
+            \Log::error('Error al notificar administradores: ' . $e->getMessage());
         }
     }
 

@@ -15,6 +15,14 @@ use App\Http\Controllers\Api\VeeduriaController;
 use App\Http\Controllers\Api\CasoLegalController;
 use App\Http\Controllers\Api\IAController;
 use App\Http\Controllers\Api\PermisosController;
+use App\Http\Controllers\Api\AlertasController;
+use App\Http\Controllers\Api\InstitucionController;
+use App\Http\Controllers\Api\MenuPAEController;
+use App\Http\Controllers\Api\EntregaPAEController;
+use App\Http\Controllers\Api\IncidenciaPAEController;
+use App\Http\Controllers\Api\CAEComiteController;
+use App\Http\Controllers\Api\CAEActaController;
+use App\Http\Controllers\Api\CAESeguimientoController;
 
 // ==================== RUTAS PÚBLICAS ====================
 
@@ -148,6 +156,175 @@ Route::middleware(['auth:sanctum'])->group(function () {
                 'message' => 'Dashboard cargado correctamente'
             ]
         ]);
+    });
+
+    // ==================== ADMIN - ESTADO DEL SISTEMA ====================
+    Route::prefix('admin/sistema')->group(function () {
+        Route::get('/estado', function () {
+            try {
+                $queueDefault = config('queue.default');
+                $hasAI = !empty(config('services.openai.api_key')) || !empty(config('services.anthropic.api_key'));
+                $storageOk = is_dir(storage_path()) && is_writable(storage_path());
+
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'pdf' => true, // cliente puede generar PDF; backend opcional
+                        'ia' => (bool) $hasAI,
+                        'storage' => (bool) $storageOk,
+                        'cola' => (bool) $queueDefault,
+                        'worker' => false, // requiere verificación con cache/heartbeat si se habilita
+                        'version' => app()->version(),
+                        'queue_default' => $queueDefault,
+                    ]
+                ]);
+            } catch (\Throwable $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No fue posible obtener el estado del sistema',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+        });
+
+        Route::post('/probar-cola', function () {
+            try {
+                dispatch(function () {
+                    \Log::info('[CSDT] Job de prueba ejecutado correctamente');
+                })->onQueue(config('queue.connections.database.queue', 'default'));
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Job de prueba encolado'
+                ]);
+            } catch (\Throwable $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error encolando job de prueba',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+        });
+
+        // Disparar alertas tempranas manualmente
+        Route::post('/generar-alertas', function () {
+            try {
+                dispatch(new \App\Jobs\GenerarAlertasTempranasJob());
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Job de alertas tempranas encolado'
+                ]);
+            } catch (\Throwable $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error encolando job de alertas',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+        });
+
+        // Configuración runtime de alertas (cache)
+        Route::post('/alerts-email', function (Request $request) {
+            try {
+                $enabled = (bool) $request->get('enabled', false);
+                \Cache::put('alerts_email_enabled', $enabled, 86400);
+                return response()->json(['success' => true, 'enabled' => $enabled]);
+            } catch (\Throwable $e) {
+                return response()->json(['success' => false, 'message' => 'Error actualizando configuración', 'error' => $e->getMessage()], 500);
+            }
+        });
+    });
+
+    // ==================== PDF BÁSICO (SERVER-SIDE) ====================
+    Route::prefix('pdf')->group(function () {
+        Route::get('/proyecto/{id}', function ($id) {
+            $html = '<html><body><h1>Proyecto #'.htmlspecialchars($id).'</h1><p>Documento generado por CSDT.</p></body></html>';
+            $dompdf = new \Dompdf\Dompdf();
+            $dompdf->loadHtml($html);
+            $dompdf->render();
+            return response($dompdf->output(), 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="proyecto_'.$id.'.pdf"'
+            ]);
+        });
+
+        Route::get('/actividad/{id}', function ($id) {
+            $html = '<html><body><h1>Dependencia #'.htmlspecialchars($id).'</h1><p>Documento generado por CSDT.</p></body></html>';
+            $dompdf = new \Dompdf\Dompdf();
+            $dompdf->loadHtml($html);
+            $dompdf->render();
+            return response($dompdf->output(), 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="dependencia_'.$id.'.pdf"'
+            ]);
+        });
+
+        Route::get('/tarea/{id}', function ($id) {
+            $html = '<html><body><h1>Cola #'.htmlspecialchars($id).'</h1><p>Documento generado por CSDT.</p></body></html>';
+            $dompdf = new \Dompdf\Dompdf();
+            $dompdf->loadHtml($html);
+            $dompdf->render();
+            return response($dompdf->output(), 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="cola_'.$id.'.pdf"'
+            ]);
+        });
+
+        // Plantillas específicas
+        Route::get('/acta-cae/{id}', function ($id) {
+            $html = '<html><body><h1>Acta CAE #'.htmlspecialchars($id).'</h1><p>Acta del Comité de Alimentación Escolar.</p></body></html>';
+            $dompdf = new \Dompdf\Dompdf();
+            $dompdf->loadHtml($html);
+            $dompdf->render();
+            return response($dompdf->output(), 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="acta_cae_'.$id.'.pdf"'
+            ]);
+        });
+
+        Route::get('/denuncia/{id}', function ($id) {
+            $html = '<html><body><h1>Denuncia/Corrección #'.htmlspecialchars($id).'</h1><p>Detalle de denuncia o corrección PAE.</p></body></html>';
+            $dompdf = new \Dompdf\Dompdf();
+            $dompdf->loadHtml($html);
+            $dompdf->render();
+            return response($dompdf->output(), 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="denuncia_'.$id.'.pdf"'
+            ]);
+        });
+
+        Route::get('/hallazgos/{id}', function ($id) {
+            $html = '<html><body><h1>Hallazgos #'.htmlspecialchars($id).'</h1><p>Informe de veeduría y hallazgos.</p></body></html>';
+            $dompdf = new \Dompdf\Dompdf();
+            $dompdf->loadHtml($html);
+            $dompdf->render();
+            return response($dompdf->output(), 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="hallazgos_'.$id.'.pdf"'
+            ]);
+        });
+    });
+
+    // ==================== ALERTAS PAE ====================
+    Route::prefix('alertas')->group(function () {
+        Route::get('/', [AlertasController::class, 'index']);
+        Route::get('/{id}', [AlertasController::class, 'show']);
+        Route::put('/{id}', [AlertasController::class, 'update']);
+    });
+
+    // ==================== PAE ====================
+    Route::prefix('pae')->group(function () {
+        Route::apiResource('instituciones', InstitucionController::class);
+        Route::apiResource('menus', MenuPAEController::class);
+        Route::apiResource('entregas', EntregaPAEController::class);
+        Route::apiResource('incidencias', IncidenciaPAEController::class);
+    });
+
+    // ==================== CAE ====================
+    Route::prefix('cae')->group(function () {
+        Route::apiResource('comites', CAEComiteController::class);
+        Route::apiResource('actas', CAEActaController::class);
+        Route::apiResource('seguimientos', CAESeguimientoController::class);
     });
 });
 

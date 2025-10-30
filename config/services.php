@@ -137,4 +137,10 @@ return [
         ],
     ],
 
+    // Configuración de alertas del sistema
+    'alerts' => [
+        'email_enabled' => env('ALERTS_EMAIL_ENABLED', false),
+        'to' => env('ALERTS_EMAIL_TO'),
+    ],
+
 ];
